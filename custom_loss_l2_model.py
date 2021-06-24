@@ -23,6 +23,8 @@ class TorchCustomLossL2Model(TorchModelV2, nn.Module):
                          name)
         nn.Module.__init__(self)
 
+        self.hascustomloss=True
+
         self.input_files = input_files
         # Create a new input reader per worker.
         self.reader = JsonReader(self.input_files)
