@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--framework",
     choices=["tf", "tf2", "tfe", "torch"],
-    default="tf",
+    default="torch",
     help="The DL framework specifier.")
 parser.add_argument("--stop-iters", type=int, default=200)
 parser.add_argument(
