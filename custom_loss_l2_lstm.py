@@ -1,15 +1,3 @@
-"""Example of using custom_loss() with an imitation learning loss.
-
-The default input file is too small to learn a good policy, but you can
-generate new experiences for IL training as follows:
-
-To generate experiences:
-$ ./train.py --run=PG --config='{"output": "/tmp/cartpole"}' --env=CartPole-v0
-
-To train on experiences with joint PG + IL loss:
-$ python custom_loss.py --input-files=/tmp/cartpole
-"""
-
 import argparse
 from pathlib import Path
 import os
@@ -17,7 +5,7 @@ import os
 import ray
 from ray import tune
 from ray.rllib.examples.models.custom_loss_model import CustomLossModel, TorchCustomLossModel
-from custom_loss_l2_model import TorchCustomLossL2Model
+from custom_loss_l2_model_lstm import TorchCustomLossL2ModelLSTM
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.framework import try_import_tf
 
@@ -29,27 +17,13 @@ parser.add_argument(
     choices=["tf", "tf2", "tfe", "torch"],
     default="torch",
     help="The DL framework specifier.")
-parser.add_argument("--stop-iters", type=int, default=200)
-parser.add_argument(
-    "--input-files",
-    type=str,
-    default=os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "small.json"))
+parser.add_argument("--stop-iters", type=int, default=10)
 
 if __name__ == "__main__":
     ray.init()
     args = parser.parse_args()
 
-    # Bazel makes it hard to find files specified in `args` (and `data`).
-    # Look for them here.
-    if not os.path.exists(args.input_files):
-        # This script runs in the ray/rllib/examples dir.
-        rllib_dir = Path(__file__).parent.parent
-        input_dir = rllib_dir.absolute().joinpath(args.input_files)
-        args.input_files = str(input_dir)
-
-    ModelCatalog.register_custom_model("custom_loss", TorchCustomLossL2Model)
+    ModelCatalog.register_custom_model("custom_loss", TorchCustomLossL2ModelLSTM)
 
     config = {
         "env": "CartPole-v0",
@@ -58,13 +32,10 @@ if __name__ == "__main__":
         "num_workers": 0,
         "model": {
             "custom_model": "custom_loss",
-            "custom_model_config": {
-                "input_files": args.input_files,
-            },
             "use_lstm": True,
-            "lstm_cell_size": 128,
-            "lstm_use_prev_action": True,
-            "lstm_use_prev_reward": True,            
+            # "lstm_cell_size": 128,
+            # "lstm_use_prev_action": True,
+            # "lstm_use_prev_reward": True,
         },
 
         "framework": args.framework,
@@ -74,4 +45,4 @@ if __name__ == "__main__":
         "training_iteration": args.stop_iters,
     }
 
-    tune.run("PG", config=config, stop=stop, verbose=1)
+    tune.run("PPO", config=config, stop=stop, verbose=1)
